@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "GNU Radio: Build & Run",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "wsl --distribution Ubuntu-22.04 -e gnuradio-companion",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "GNU Radio: Build Project"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "GNU Radio: Build Project",
+			"command": "wsl -u root --distribution Ubuntu-22.04 -e bash -c \"./build.sh\"",
+			"group": {
+				"kind": "build",
+			},
+		}
+	]
+}

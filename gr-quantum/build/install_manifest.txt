@@ -1,0 +1,9 @@
+/usr/local/lib/cmake/gnuradio-quantum/gnuradio-quantumConfig.cmake
+/usr/local/include/gnuradio/quantum/api.h
+/usr/local/lib/python3.10/dist-packages/gnuradio/quantum/__init__.py
+/usr/local/lib/python3.10/dist-packages/gnuradio/quantum/quantum_in_out.py
+/usr/local/lib/python3.10/dist-packages/gnuradio/quantum/__init__.pyc
+/usr/local/lib/python3.10/dist-packages/gnuradio/quantum/quantum_in_out.pyc
+/usr/local/lib/python3.10/dist-packages/gnuradio/quantum/__init__.pyo
+/usr/local/lib/python3.10/dist-packages/gnuradio/quantum/quantum_in_out.pyo
+/usr/local/share/gnuradio/grc/blocks/quantum_quantum_in_out.block.yml
