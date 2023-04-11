@@ -1,0 +1,42 @@
+id: CW_Radar
+label: QT GUI CW Radar
+category: '[GRC Hier Blocks]'
+flags: need_qt_gui
+
+parameters:
+-   id: CW_Radar_pulse_repetition_interval
+    label: PRI
+    dtype: int
+    default: '1200'
+    hide: none
+-   id: CW_Radar_pulse_width
+    label: Pulse Witdth
+    dtype: int
+    default: '700'
+    hide: none
+-   id: gui_hint
+    label: GUI Hint
+    dtype: gui_hint
+    hide: part
+
+inputs: []
+
+outputs:
+-   label: out
+    dtype: complex
+    vlen: 1
+
+templates:
+    imports: 'from CW_Radar import CW_Radar  # grc-generated hier_block'
+    make: "CW_Radar(\n    CW_Radar_pulse_repetition_interval=${ CW_Radar_pulse_repetition_interval\
+        \ },\n    CW_Radar_pulse_width=${ CW_Radar_pulse_width },\n)\n<% win = 'self.%s'%id\
+        \ %>\n${ gui_hint() % win }"
+    callbacks:
+    - set_CW_Radar_pulse_repetition_interval(${ CW_Radar_pulse_repetition_interval
+        })
+    - set_CW_Radar_pulse_width(${ CW_Radar_pulse_width })
+
+documentation: /mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/CW_Radar.py
+grc_source: /mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/CW_Radar.grc
+
+file_format: 1
