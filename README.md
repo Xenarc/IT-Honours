@@ -5,7 +5,7 @@
 WSL2
 `sudo apt-get install gnuradio`
 Follow `https://wiki.gnuradio.org/index.php?title=WindowsInstall#WSL_|_Ubuntu`
-
+`pip install qiskit`
 ## Running
 
 1. Run
