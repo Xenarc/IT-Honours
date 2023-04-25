@@ -23,7 +23,7 @@ GR_PYTHON_INSTALL(
     FILES
     __init__.py
     quantum_in_out.py
-    DESTINATION ${GR_PYTHON_DIR}/gnuradio/quantum
+    quantum_encode_sink.py DESTINATION ${GR_PYTHON_DIR}/gnuradio/quantum
 )
 
 ########################################################################
@@ -40,3 +40,4 @@ add_custom_target(
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}
           ${CMAKE_BINARY_DIR}/test_modules/gnuradio/quantum/
 )
+GR_ADD_TEST(qa_quantum_encode_sink ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_quantum_encode_sink.py)

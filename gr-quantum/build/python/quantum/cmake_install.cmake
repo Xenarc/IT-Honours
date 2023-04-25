@@ -46,6 +46,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/python3.10/dist-packages/gnuradio/quantum" TYPE FILE FILES
     "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/python/quantum/__init__.py"
     "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/python/quantum/quantum_in_out.py"
+    "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/python/quantum/quantum_encode_sink.py"
     )
 endif()
 
@@ -53,8 +54,10 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/python3.10/dist-packages/gnuradio/quantum" TYPE FILE FILES
     "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/build/python/quantum/__init__.pyc"
     "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/build/python/quantum/quantum_in_out.pyc"
+    "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/build/python/quantum/quantum_encode_sink.pyc"
     "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/build/python/quantum/__init__.pyo"
     "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/build/python/quantum/quantum_in_out.pyo"
+    "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/build/python/quantum/quantum_encode_sink.pyo"
     )
 endif()
 

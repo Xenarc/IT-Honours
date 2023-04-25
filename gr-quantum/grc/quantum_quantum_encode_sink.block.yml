@@ -1,0 +1,48 @@
+id: quantum_quantum_encode_sink
+label: quantum_encode_sink
+category: '[quantum]'
+
+templates:
+  imports: from gnuradio import quantum
+  make: quantum.quantum_encode_sink(${method}, ${num_qubits}, ${shots})
+
+#  Make one 'parameters' list entry for every parameter you want settable from the GUI.
+#     Keys include:
+#     * id (makes the value accessible as keyname, e.g. in the make entry)
+#     * label (label shown in the GUI)
+#     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
+#     * default
+parameters:
+- id: method
+  label: Quantum encoding method
+  dtype: string
+  default: amplitude
+- id: num_qubits
+  label: Number of qubits
+  dtype: int
+  default: 3
+- id: shots
+  label: Number of quantum simulation shots
+  dtype: int
+  default: 100
+#- id: ...
+#  label: ...
+#  dtype: ...
+
+#  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
+#  Keys include:
+#      * label (an identifier for the GUI)
+#      * domain (optional - stream or message. Default is stream)
+#      * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
+#      * vlen (optional - data stream vector length. Default is 1)
+#      * optional (optional - set to 1 for optional inputs. Default is 0)
+inputs:
+- label: in0
+  domain: stream
+  dtype: complex
+outputs:
+- label: out0
+  domain: stream
+  dtype: float
+
+file_format: 1

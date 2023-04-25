@@ -19,6 +19,7 @@ try:
 except ModuleNotFoundError:
     pass
 
+from .quantum_encode_sink import quantum_encode_sink
 # import any pure python here
 from .quantum_in_out import quantum_in_out
 

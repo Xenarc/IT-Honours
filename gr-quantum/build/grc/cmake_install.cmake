@@ -43,6 +43,9 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/gnuradio/grc/blocks" TYPE FILE FILES "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/grc/quantum_quantum_in_out.block.yml")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/gnuradio/grc/blocks" TYPE FILE FILES
+    "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/grc/quantum_quantum_in_out.block.yml"
+    "/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/gr-quantum/grc/quantum_quantum_encode_sink.block.yml"
+    )
 endif()
 

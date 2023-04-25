@@ -7,5 +7,5 @@
 #
 install(FILES
     quantum_quantum_in_out.block.yml
-    DESTINATION share/gnuradio/grc/blocks
+    quantum_quantum_encode_sink.block.yml DESTINATION share/gnuradio/grc/blocks
 )
