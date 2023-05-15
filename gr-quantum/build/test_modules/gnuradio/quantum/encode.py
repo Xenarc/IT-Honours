@@ -1,28 +1,19 @@
-import logging
 
-import numpy as np
-from qiskit import QuantumCircuit
+from qiskit.visualization import plot_histogram
 
+# Compile the circuit for the support instruction set (basis_gates)
+# and topology (coupling_map) of the backend
+compiled_circuit = transpile(circuit, simulator)
 
-class amplitude_encoder:
-  def __init__(self, num_qubits):
-    self.circ = QuantumCircuit(num_qubits)
+# Execute the circuit on the aer simulator
+job = simulator.run(compiled_circuit, shots=1000)
 
-  def encode_array(self, arr):
-    magnitude = np.sqrt(sum([x*x for x in arr]))
-    state = (1 / magnitude) * np.array(arr)
+# Grab results from the job
+result = job.result()
 
-    self.circ.initialize(state, [0, 1])
-    self.circ.draw(output='mpl')
+# Returns counts
+counts = result.get_counts(compiled_circuit)
+print("\nTotal count for 00 and 11 are:", counts)
 
-        # # create figure (will only create new window if needed)
-        # plt.figure()
-        # # Generate plot1
-        # plt.plot(range(10, 20))
-        # # Show the plot in non-blocking mode
-        # plt.show(block=False)
-
-        # # Finally block main thread until all plots are closed
-        # plt.show()
-        
-
+# Draw the circuit
+circuit.draw()
