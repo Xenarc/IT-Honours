@@ -13,18 +13,16 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pywt
 from gnuradio import gr
 from qiskit import (Aer, ClassicalRegister, QuantumCircuit, QuantumRegister,
                     transpile)
 from qiskit.circuit.library import QFT
 
-# def norm(arr):
-#     amplitudes = [np.abs(a) * np.abs(a) for a in arr]
-#     return arr / np.sqrt(sum(amplitudes))
-# return arr / np.linalg.norm(arr, ord=1)
-# return arr / np.linalg.norm(arr)
 
-
+def norm(arr):
+    amplitudes = [np.abs(a) * np.abs(a) for a in arr]
+    return arr / np.sqrt(sum(amplitudes))
 
 class quantum_encode_sink(gr.basic_block):
     """
@@ -67,32 +65,40 @@ class quantum_encode_sink(gr.basic_block):
         )
 
     def general_work(self, input_items, output_items):
+        # Upon starting, the buffer isn't big enough; return 0 while waiting.
         if(len(input_items[0]) <= self.buff_size): return 0
+
         self.consume(0, self.buff_size)
         self.produce(0, 1)
 
         in0 = np.array(input_items[0][:self.buff_size], dtype=np.complex128)
 
+        self.classical = ClassicalRegister(self.num_qubits, "classical")
+        self.quantum = QuantumRegister(self.num_qubits, "quantum")
+
         self.encode(in0)
-        self.circuit += QFT(num_qubits=self.num_qubits, approximation_degree=2)
-        self.circuit += QFT(num_qubits=self.num_qubits, approximation_degree=2, inverse=true)
+        # self.circuit += QFT(num_qubits=self.num_qubits, approximation_degree=2)
+        # self.circuit += QFT(num_qubits=self.num_qubits, approximation_degree=2, inverse=true)
         # self.qft_rotations(self.num_qubits)
 
         self.circuit.measure(self.quantum, self.classical)
         self.circuit = transpile(self.circuit, self.simulator)
 
         # Run and get counts
-        result = self.simulator.run(self.circuit, shots=self.shots).result()
+        result = self.simulator.run(self.circuit, shots=self.shots, memory=True).result()
         counts = result.get_counts(self.circuit)
+        raw_measurements = result.get_memory(self.circuit)
 
-        most_probable_value = 0 # highest count
-        most_probable_key = next(iter(counts)) # First / any key
-        for key, value in counts.items():
-            if value > most_probable_value:
-                most_probable_key = key
-                most_probable_value = value
+        # most_probable_value = 0 # highest count
+        # most_probable_key = next(iter(counts)) # First / any key
+        # for key, value in counts.items():
+        #     if value > most_probable_value:
+        #         most_probable_key = key
+        #         most_probable_value = value
 
-        output_items[0][:] = float(most_probable_value / self.shots)
+        self.logger.debug(raw_measurements)
+
+        output_items[0][:] = float(np.mean([int(value, 2) for value in raw_measurements]))
 
         # output_items[0][:] = int(most_probable_value, 2)
         # self.draw()
@@ -105,17 +111,32 @@ class quantum_encode_sink(gr.basic_block):
         raise InterruptedError()
 
     def encode_amplitude(self, arr):
-        self.classical = ClassicalRegister(self.num_qubits, "classical")
-        self.quantum = QuantumRegister(self.num_qubits, "quantum")
-
-        self.circuit = QuantumCircuit(self.quantum, self.classical, name=f"Amplitude Encoding")
+        self.circuit = QuantumCircuit(self.quantum,
+                                      self.classical,
+                                      name=f"Amplitude Encoding")
         state = arr / np.sqrt(np.sum(arr * np.conj(arr)))
         self.circuit.initialize(state, self.circuit.qubits)
 
     def encode_angle(self, arr):
-        self.circuit = QuantumCircuit(self.num_qubits, name=f"Angle Encoding")
-        state = norm(arr)
-        self.circuit.initialize(state, self.circuit.qubits)
+        self.circuit = QuantumCircuit(self.quantum,
+                                      self.classical,
+                                      name=f"Angle Encoding")
+        # state = norm(arr)
+        # self.circuit.initialize(state, self.circuit.qubits)
+
+        # Convert array to double, because wavelet transform can't do complexes
+        cA, cD = norm(pywt.dwt([np.abs(a) for a in arr], 'haar'))
+
+        # log the wavelet
+        self.logger.debug("Wavelets:")
+        self.logger.debug(cA)
+        self.logger.debug(cD)
+
+        # encode the angle
+        for i in range(self.num_qubits):
+            self.circuit.ry(cA[i], i)
+            self.circuit.rz(cD[i], i)
+
 
     def qft_rotations(self, n):
         if n == 0: # Exit function if circuit is empty
