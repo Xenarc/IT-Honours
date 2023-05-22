@@ -35,6 +35,7 @@ class quantum_encode_sink(gr.basic_block):
 
         if(method == 'amplitude'): self.encode = self.encode_amplitude
         elif(method == 'angle'): self.encode = self.encode_angle
+        elif(method == 'basis'): self.encode = self.encode_basis
         else:
             self.logger.exception(f"Cannot encode using method {method}")
             raise Exception(f"Cannot encode using method {method}")
@@ -103,12 +104,33 @@ class quantum_encode_sink(gr.basic_block):
         # output_items[0][:] = int(most_probable_value, 2)
         # self.draw()
 
+        # Process one sample at a time
         return 1
 
     def draw(self):
         self.circuit.draw(output='mpl')
         plt.show(block=True)
         raise InterruptedError()
+
+    def encode_basis(self, arr):
+        self.circuit = QuantumCircuit(self.quantum,
+                                      self.classical,
+                                      name=f"Basis Encoding")
+        amplitude = np.linalg.norm(arr) / max([np.abs(sample) for sample in arr])
+        scaled_amplitude = int(amplitude * (2**self.num_qubits))
+        self.logger.warn('amplitude')
+        self.logger.warn(amplitude)
+
+        state = []
+
+        for bit in range(self.buff_size):
+            state.append(int((scaled_amplitude >> bit) & 1))
+
+        self.logger.warn('state')
+        self.logger.warn(state)
+
+        state = np.array(state, dtype=np.longdouble) / np.linalg.norm(state)
+        self.circuit.initialize(state, self.circuit.qubits)
 
     def encode_amplitude(self, arr):
         self.circuit = QuantumCircuit(self.quantum,
@@ -121,8 +143,6 @@ class quantum_encode_sink(gr.basic_block):
         self.circuit = QuantumCircuit(self.quantum,
                                       self.classical,
                                       name=f"Angle Encoding")
-        # state = norm(arr)
-        # self.circuit.initialize(state, self.circuit.qubits)
 
         # Convert array to double, because wavelet transform can't do complexes
         cA, cD = norm(pywt.dwt([np.abs(a) for a in arr], 'haar'))
@@ -134,8 +154,8 @@ class quantum_encode_sink(gr.basic_block):
 
         # encode the angle
         for i in range(self.num_qubits):
-            self.circuit.ry(cA[i], i)
-            self.circuit.rz(cD[i], i)
+            self.circuit.ry(cA[i]*2*math.pi, i)
+            self.circuit.rz(cD[i]*2*math.pi, i)
 
 
     def qft_rotations(self, n):
