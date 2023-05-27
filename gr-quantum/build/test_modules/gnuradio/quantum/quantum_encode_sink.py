@@ -64,8 +64,6 @@ class quantum_encode_sink(gr.basic_block):
         self.simulator = Aer.get_backend('aer_simulator')
         self.simulator.set_options(precision='single')
 
-        self.max_value = 1 # Store the largest value for normalisation of amplitude
-
         gr.basic_block.__init__(
             self,
             name="quantum_encode_sink",
@@ -83,8 +81,13 @@ class quantum_encode_sink(gr.basic_block):
         self.quantum = QuantumRegister(self.num_qubits, "quantum")
 
         self.encode(in0)
-        # self.circuit += QFT(num_qubits=self.num_qubits, approximation_degree=2)
-        # self.circuit += QFT(num_qubits=self.num_qubits, approximation_degree=2, inverse=true)
+        self.circuit = self.circuit.compose(
+            QFT(num_qubits=self.num_qubits,
+                approximation_degree=2))
+        # self.circuit = self.circuit.compose(
+        #     QFT(num_qubits=self.num_qubits,
+        #         approximation_degree=2,
+        #         inverse=True))
         # self.qft_rotations(self.num_qubits)
 
         self.circuit.measure(self.quantum, self.classical)
@@ -97,15 +100,20 @@ class quantum_encode_sink(gr.basic_block):
 
         self.logger.debug(raw_measurements)
 
-        output_items[0][:] = self.post_process(raw_measurements)
+        output_buffer = self.post_process(raw_measurements)
 
-        self.logger.debug(output_items[0][:])
-        self.logger.debug(len(output_items[0][:]))
+        num_output_items = len(output_buffer)
+
+        output_items[0][:num_output_items] = output_buffer
+
+        self.logger.debug(num_output_items)
+
+        self.set_output_multiple(num_output_items)
 
         if (self.do_draw):
             self.draw()
 
-        return len(output_items[0])
+        return num_output_items
 
     def draw(self):
         self.circuit.draw(output='mpl')
@@ -141,33 +149,28 @@ class quantum_encode_sink(gr.basic_block):
                                       self.classical,
                                       name=f"Basis Encoding")
         # Perform delta encoding
+        delta_encoded = np.zeros_like(arr, dtype=np.int32)
 
-        # delta_encoded = np.zeros_like(in0, dtype=np.complex128)
-        # delta_encoded[0] = in0[0]  # First sample remains unchanged
-        # for i in range(1, len(in0)):
-        #     delta_encoded[i] = in0[i] - in0[i - 1]
-        
-        # Update the largest
-        self.max_value = max(self.max_value, np.linalg.norm((arr[0])))
+        # First sample remains unchanged
+        delta_encoded[0] = np.linalg.norm(arr[0]) + 1
+        for i in range(1, len(arr)):
+            # Compute delta between consecutive samples
+            delta_encoded[i] = np.linalg.norm(arr[i] - arr[i - 1])
 
-        self.logger.debug("max_value")
-        self.logger.debug(self.max_value)
+        self.logger.debug(delta_encoded)
 
-        amplitude = (np.mean(np.linalg.norm(arr[:32])))  / self.max_value # 8 value moving average
-        scaled_amplitude = int(amplitude * (2**self.num_qubits)) + 1 # +1 because [0,0,...] isn't a valid statevector
+        # Convert delta-encoded samples to binary representation
+        binary_encoded = np.zeros_like(delta_encoded, dtype=np.uint8)
+        for i, sample in enumerate(delta_encoded):
+            # Binary encoding
+            binary_encoded[i] = int(np.real(sample) > 0) * 2 + int(np.imag(sample) > 0)
 
-        self.logger.debug('amplitude')
-        self.logger.debug(amplitude)
+        self.logger.debug(binary_encoded)
 
-        state = []
+        self.logger.debug("delta_encoded state")
+        self.logger.debug(binary_encoded)
 
-        for bit in range(self.buff_size):
-            state.append(int((scaled_amplitude >> bit) & 1))
-
-        self.logger.debug('state')
-        self.logger.debug(state)
-
-        state = np.array(state, dtype=np.longdouble) / np.linalg.norm(state)
+        state = np.array(binary_encoded, dtype=np.longdouble) / np.linalg.norm(binary_encoded)
         self.circuit.initialize(state, self.circuit.qubits)
 
     def encode_amplitude(self, arr):
