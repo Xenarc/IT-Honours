@@ -10,6 +10,7 @@
 import logging
 import math
 import sys
+from collections import Counter
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,45 +34,49 @@ class quantum_encode_sink(gr.basic_block):
         self.logger = logging.getLogger(type(self).__name__)
         self.logger.setLevel(logging.INFO)
 
-        if(method == 'amplitude'): self.encode = self.encode_amplitude
-        elif(method == 'angle'): self.encode = self.encode_angle
-        elif(method == 'basis'): self.encode = self.encode_basis
+        self.logger.info(f"Encoding using {method} method.")
+        if(method == 'amplitude'):
+            self.encode = self.encode_amplitude
+            self.post_process = self.amplitude_post_process
+        elif(method == 'angle'):
+            self.encode = self.encode_angle
+            self.post_process = self.mean_post_process
+        elif(method == 'basis'):
+            self.encode = self.encode_basis
+            self.post_process = self.mean_post_process
         else:
             self.logger.exception(f"Cannot encode using method {method}")
             raise Exception(f"Cannot encode using method {method}")
 
-        self.logger.info(f"Encoding using {method} method.")
 
+        self.do_draw = False
+        self.logger.info(f"Draw circuit (and quit)? {self.do_draw}")
+
+        self.logger.info(f"Number of qubits = {num_qubits}")
         self.num_qubits = num_qubits
-        self.logger.info(f"Number of qubits = {self.num_qubits}")
 
         self.buff_size = 2**self.num_qubits
         self.logger.info(f"Buffer size = {self.buff_size}")
 
+        self.logger.info(f"Shots = {shots}")
         self.shots = shots
-        self.logger.info(f"Shots = {self.shots}")
 
         self.simulator = Aer.get_backend('aer_simulator')
         self.simulator.set_options(precision='single')
 
-
-        # self.decimation = int(self.buff_size)
+        self.max_value = 1 # Store the largest value for normalisation of amplitude
 
         gr.basic_block.__init__(
             self,
             name="quantum_encode_sink",
             in_sig=[np.complex64],
             out_sig=[np.float32],
-            # decim=self.decimation
         )
 
     def general_work(self, input_items, output_items):
-        # Upon starting, the buffer isn't big enough; return 0 while waiting.
-        if(len(input_items[0]) <= self.buff_size): return 0
+        self.consume(0, 1)
 
-        self.consume(0, self.buff_size)
-        self.produce(0, 1)
-
+        # Get the buffer. input_items[0] is the newest
         in0 = np.array(input_items[0][:self.buff_size], dtype=np.complex128)
 
         self.classical = ClassicalRegister(self.num_qubits, "classical")
@@ -90,44 +95,77 @@ class quantum_encode_sink(gr.basic_block):
         counts = result.get_counts(self.circuit)
         raw_measurements = result.get_memory(self.circuit)
 
-        # most_probable_value = 0 # highest count
-        # most_probable_key = next(iter(counts)) # First / any key
-        # for key, value in counts.items():
-        #     if value > most_probable_value:
-        #         most_probable_key = key
-        #         most_probable_value = value
-
         self.logger.debug(raw_measurements)
 
-        output_items[0][:] = float(np.mean([int(value, 2) for value in raw_measurements]))
+        output_items[0][:] = self.post_process(raw_measurements)
 
-        # output_items[0][:] = int(most_probable_value, 2)
-        # self.draw()
+        self.logger.debug(output_items[0][:])
+        self.logger.debug(len(output_items[0][:]))
 
-        # Process one sample at a time
-        return 1
+        if (self.do_draw):
+            self.draw()
+
+        return len(output_items[0])
 
     def draw(self):
         self.circuit.draw(output='mpl')
         plt.show(block=True)
         raise InterruptedError()
 
+    def amplitude_post_process(self, raw_measurements):
+        # Convert binary measurements to decimal values
+        decimal_values = [int(binary, 2) for binary in raw_measurements]
+
+        # Count the occurrences of each decimal value
+        state_counts = Counter(decimal_values)
+
+        # Calculate the total number of measurements
+        total_measurements = len(decimal_values)
+
+        # Normalize the frequencies to obtain probabilities
+        probabilities = {state: count / total_measurements for state, count in state_counts.items()}
+
+        # Calculate the amplitudes by taking the square root of the probabilities
+        amplitudes = {state: np.sqrt(prob) for state, prob in probabilities.items()}
+
+        # Convert amplitudes to a numpy array of dtype float32
+        return np.array(list(amplitudes.values()), dtype=np.float32)
+
+    def mean_post_process(self, raw_measurements):
+        output = [int(binary, 2) for binary in raw_measurements]
+        self.logger.debug(output)
+        return np.array([np.float32(np.mean(output))])
+
     def encode_basis(self, arr):
         self.circuit = QuantumCircuit(self.quantum,
                                       self.classical,
                                       name=f"Basis Encoding")
-        amplitude = np.linalg.norm(arr) / max([np.abs(sample) for sample in arr])
-        scaled_amplitude = int(amplitude * (2**self.num_qubits))
-        self.logger.warn('amplitude')
-        self.logger.warn(amplitude)
+        # Perform delta encoding
+
+        # delta_encoded = np.zeros_like(in0, dtype=np.complex128)
+        # delta_encoded[0] = in0[0]  # First sample remains unchanged
+        # for i in range(1, len(in0)):
+        #     delta_encoded[i] = in0[i] - in0[i - 1]
+        
+        # Update the largest
+        self.max_value = max(self.max_value, np.linalg.norm((arr[0])))
+
+        self.logger.debug("max_value")
+        self.logger.debug(self.max_value)
+
+        amplitude = (np.mean(np.linalg.norm(arr[:32])))  / self.max_value # 8 value moving average
+        scaled_amplitude = int(amplitude * (2**self.num_qubits)) + 1 # +1 because [0,0,...] isn't a valid statevector
+
+        self.logger.debug('amplitude')
+        self.logger.debug(amplitude)
 
         state = []
 
         for bit in range(self.buff_size):
             state.append(int((scaled_amplitude >> bit) & 1))
 
-        self.logger.warn('state')
-        self.logger.warn(state)
+        self.logger.debug('state')
+        self.logger.debug(state)
 
         state = np.array(state, dtype=np.longdouble) / np.linalg.norm(state)
         self.circuit.initialize(state, self.circuit.qubits)
@@ -136,7 +174,7 @@ class quantum_encode_sink(gr.basic_block):
         self.circuit = QuantumCircuit(self.quantum,
                                       self.classical,
                                       name=f"Amplitude Encoding")
-        state = arr / np.sqrt(np.sum(arr * np.conj(arr)))
+        state = arr / np.linalg.norm(arr)
         self.circuit.initialize(state, self.circuit.qubits)
 
     def encode_angle(self, arr):
