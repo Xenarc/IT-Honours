@@ -20,11 +20,6 @@ from qiskit import (Aer, ClassicalRegister, QuantumCircuit, QuantumRegister,
                     transpile)
 from qiskit.circuit.library import QFT
 
-
-def norm(arr):
-    amplitudes = [np.abs(a) * np.abs(a) for a in arr]
-    return arr / np.sqrt(sum(amplitudes))
-
 class quantum_encode_sink(gr.basic_block):
     """
     Encodes an input buffer into quantum form
@@ -81,9 +76,6 @@ class quantum_encode_sink(gr.basic_block):
         self.quantum = QuantumRegister(self.num_qubits, "quantum")
 
         self.encode(in0)
-        self.circuit = self.circuit.compose(
-            QFT(num_qubits=self.num_qubits,
-                approximation_degree=2))
         # self.circuit = self.circuit.compose(
         #     QFT(num_qubits=self.num_qubits,
         #         approximation_degree=2,
@@ -149,25 +141,15 @@ class quantum_encode_sink(gr.basic_block):
                                       self.classical,
                                       name=f"Basis Encoding")
         # Perform delta encoding
-        delta_encoded = np.zeros_like(arr, dtype=np.int32)
+        binary_encoded = np.zeros_like(arr, dtype=np.int32)
 
-        # First sample remains unchanged
-        delta_encoded[0] = np.linalg.norm(arr[0]) + 1
+        # First sample starts at 0
+        binary_encoded[0] = 1
         for i in range(1, len(arr)):
-            # Compute delta between consecutive samples
-            delta_encoded[i] = np.linalg.norm(arr[i] - arr[i - 1])
+            # Compute up/down delta between consecutive samples
+            binary_encoded[i] = int(np.real(arr[i] - arr[i - 1]) <= 0)
 
-        self.logger.debug(delta_encoded)
-
-        # Convert delta-encoded samples to binary representation
-        binary_encoded = np.zeros_like(delta_encoded, dtype=np.uint8)
-        for i, sample in enumerate(delta_encoded):
-            # Binary encoding
-            binary_encoded[i] = int(np.real(sample) > 0) * 2 + int(np.imag(sample) > 0)
-
-        self.logger.debug(binary_encoded)
-
-        self.logger.debug("delta_encoded state")
+        self.logger.debug("binary_encoded state")
         self.logger.debug(binary_encoded)
 
         state = np.array(binary_encoded, dtype=np.longdouble) / np.linalg.norm(binary_encoded)
@@ -186,7 +168,9 @@ class quantum_encode_sink(gr.basic_block):
                                       name=f"Angle Encoding")
 
         # Convert array to double, because wavelet transform can't do complexes
-        cA, cD = norm(pywt.dwt([np.abs(a) for a in arr], 'haar'))
+        cA, cD = pywt.dwt([np.abs(a) for a in arr], 'haar')
+        cA = cA / np.linalg.norm(cA)
+        cD = cD / np.linalg.norm(cD)
 
         # log the wavelet
         self.logger.debug("Wavelets:")
@@ -195,16 +179,12 @@ class quantum_encode_sink(gr.basic_block):
 
         # encode the angle
         for i in range(self.num_qubits):
-            self.circuit.ry(cA[i]*2*math.pi, i)
-            self.circuit.rz(cD[i]*2*math.pi, i)
-
+            self.circuit.rx(cA[i]*math.pi, i)
+            self.circuit.ry(cD[i]*math.pi, i)
 
     def qft_rotations(self, n):
-        if n == 0: # Exit function if circuit is empty
-            return self.circuit
-        n -= 1 # Indexes start from 0
-        self.circuit.h(n) # Apply the H-gate to the most significant qubit
+        if n == 0: return self.circuit
+        n -= 1
+        self.circuit.h(n)
         for qubit in range(n):
-            # For each less significant qubit, we need to do a
-            # smaller-angled controlled rotation:
             self.circuit.cp(math.pi/2**(n-qubit), qubit, n)
