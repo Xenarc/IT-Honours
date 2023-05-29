@@ -20,6 +20,7 @@ from qiskit import (Aer, ClassicalRegister, QuantumCircuit, QuantumRegister,
                     transpile)
 from qiskit.circuit.library import QFT
 
+
 class quantum_encode_sink(gr.basic_block):
     """
     Encodes an input buffer into quantum form
@@ -32,7 +33,7 @@ class quantum_encode_sink(gr.basic_block):
         self.logger.info(f"Encoding using {method} method.")
         if(method == 'amplitude'):
             self.encode = self.encode_amplitude
-            self.post_process = self.amplitude_post_process
+            self.post_process = self.mean_post_process
         elif(method == 'angle'):
             self.encode = self.encode_angle
             self.post_process = self.mean_post_process
