@@ -31,9 +31,10 @@ class quantum_encode_sink(gr.basic_block):
         self.logger.setLevel(logging.INFO)
 
         self.logger.info(f"Encoding using {method} method.")
+        self.method = method
         if(method == 'amplitude'):
             self.encode = self.encode_amplitude
-            self.post_process = self.mean_post_process
+            self.post_process = self.amplitude_post_process
         elif(method == 'angle'):
             self.encode = self.encode_angle
             self.post_process = self.mean_post_process
@@ -77,10 +78,9 @@ class quantum_encode_sink(gr.basic_block):
         self.quantum = QuantumRegister(self.num_qubits, "quantum")
 
         self.encode(in0)
-        # self.circuit = self.circuit.compose(
-        #     QFT(num_qubits=self.num_qubits,
-        #         approximation_degree=2,
-        #         inverse=True))
+        self.circuit = self.circuit.compose(
+            QFT(num_qubits=self.num_qubits,
+                approximation_degree=0, inverse=True))
         # self.qft_rotations(self.num_qubits)
 
         self.circuit.measure(self.quantum, self.classical)
@@ -109,28 +109,31 @@ class quantum_encode_sink(gr.basic_block):
         return num_output_items
 
     def draw(self):
-        self.circuit.draw(output='mpl')
-        plt.show(block=True)
+        self.circuit.decompose(reps=8).draw(output='mpl')
+        self.logger.info(f"Circuit depth = {self.circuit.depth()}")
+        # plt.show(block=True)
+        plt.savefig(
+            f"/mnt/c/Users/blash/OneDrive - Deakin University/Honours/Project/gnu-radio/circuit - {self.method}"
+        )
         raise InterruptedError()
 
     def amplitude_post_process(self, raw_measurements):
-        # Convert binary measurements to decimal values
-        decimal_values = [int(binary, 2) for binary in raw_measurements]
+        num_bits = len(raw_measurements[0])
 
-        # Count the occurrences of each decimal value
-        state_counts = Counter(decimal_values)
+        num_samples = len(raw_measurements)
+        bit_averages = []
 
-        # Calculate the total number of measurements
-        total_measurements = len(decimal_values)
+        for i in range(num_bits):
+            bit_sum = 0
+            for j in range(num_samples):
+                bit_sum += int(raw_measurements[j][i])
 
-        # Normalize the frequencies to obtain probabilities
-        probabilities = {state: count / total_measurements for state, count in state_counts.items()}
-
-        # Calculate the amplitudes by taking the square root of the probabilities
-        amplitudes = {state: np.sqrt(prob) for state, prob in probabilities.items()}
+            bit_average = bit_sum / num_samples
+            bit_averages.append(bit_average)
 
         # Convert amplitudes to a numpy array of dtype float32
-        return np.array(list(amplitudes.values()), dtype=np.float32)
+        # return np.array(bit_averages, dtype=np.float32)
+        return np.array([bit_averages[0]])
 
     def mean_post_process(self, raw_measurements):
         output = [int(binary, 2) for binary in raw_measurements]
