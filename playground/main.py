@@ -33,6 +33,22 @@ class MultiToneSignalGenerator:
         arr = freq1 + freq2
         return arr
 
+class SteppedSignalGenerator:
+    def __init__(self, sampling_rate, duration, frequency):
+        self.sampling_rate = sampling_rate
+        self.duration = duration
+        self.frequency = frequency
+        
+    def generate(self):
+        t = np.linspace(0.0, self.duration, int(self.sampling_rate * self.duration), endpoint=False)
+        arr = np.zeros(len(t))
+        pulse_start = int(len(t) * 0.05)
+        pulse_end = int(len(t) * 0.15)
+        arr[pulse_start:pulse_end] = np.sin(2 * np.pi * self.frequency * t[pulse_start:pulse_end])
+        plt.plot(t, arr, label='Array Values')
+        plt.show()
+        return arr
+
 class QuantumSineWaveEncoder:
     def __init__(self, signal_generator, num_qubits, shots, sampling_rate, duration, frequency):
         self.num_qubits = num_qubits
@@ -75,7 +91,7 @@ class QuantumSineWaveEncoder:
 
     def plot_histogram(self, raw_measurements):
         unique, counts = np.unique(raw_measurements, return_counts=True)
-        plt.bar(unique, counts)
+        plt.bar(unique[len(unique)//2:], counts[len(counts)//2:]+counts[::-1][len(counts)//2:])
         plt.xlabel('Measurement Outcomes')
         plt.ylabel('Counts')
         plt.title('Measurement Outcomes Histogram')
@@ -136,6 +152,15 @@ def run_and_plot_multiple_runs_scatter(SignalGenerator, num_qubits, shots, sampl
     plt.title('Measurement Outcomes Scatter')
     plt.legend()
     plt.show()
+    
+def run_and_plot_single_run_histogram(SignalGenerator, num_qubits, shots, sampling_rate, duration, frequencies):
+    results = []
+
+    for frequency in frequencies:
+        signal_generator = SignalGenerator(sampling_rate, duration, frequency)
+        qse = QuantumSineWaveEncoder(signal_generator, num_qubits, shots, sampling_rate, duration, frequency)
+        raw_measurements = qse.run_circuit()
+        qse.plot_histogram(raw_measurements)
 
 def experiment_1():
   """
@@ -209,6 +234,62 @@ def experiment_4():
   
   run_and_plot_heatmap(signal_generator, num_qubits, shots, sampling_rate, duration, frequencies)
 
+def experiment_5():
+  """
+  Generates a heatmap from a pulse signal, using lots of samples
+  """
+  num_qubits = 8
+  shots = 20000
+  sampling_rate = 40000
+  duration = 1.0
+  starting_freq = 440.0  # Starting frequency in Hz
+  interval = 10000.0  # Frequency interval in Hz
+  num_frequencies = 2
+
+  frequencies = np.arange(starting_freq, starting_freq + interval * num_frequencies, interval)
+
+  signal_generator = DefaultSignalGenerator
+  
+  run_and_plot_single_run_histogram(signal_generator, num_qubits, shots, sampling_rate, duration, frequencies)
+  
+
+def experiment_6():
+  """
+  Generates a heatmap from a pulse signal, using lots of samples
+  """
+  num_qubits = 8
+  shots = 20000
+  sampling_rate = 4000
+  duration = 1.0
+  starting_freq = 440.0  # Starting frequency in Hz
+  interval = 10000.0  # Frequency interval in Hz
+  num_frequencies = 1
+
+  frequencies = np.arange(starting_freq, starting_freq + interval * num_frequencies, interval)
+
+  signal_generator = MultiToneSignalGenerator
+  
+  run_and_plot_single_run_histogram(signal_generator, num_qubits, shots, sampling_rate, duration, frequencies)
+  
+def experiment_7():
+  """
+  Generates a heatmap from a pulse signal, using lots of samples
+  """
+  num_qubits = 8
+  shots = 20000
+  sampling_rate = 43000
+  duration = 1.0
+  starting_freq = 440.0  # Starting frequency in Hz
+  interval = 1000.0  # Frequency interval in Hz
+  num_frequencies = 1
+
+  frequencies = np.arange(starting_freq, starting_freq + interval * num_frequencies, interval)
+
+  signal_generator = SteppedSignalGenerator
+  
+  run_and_plot_single_run_histogram(signal_generator, num_qubits, shots, sampling_rate, duration, frequencies)
+  
+  
 if __name__ == "__main__":
-  experiment_3()
+  experiment_6()
   
