@@ -18,6 +18,8 @@ class DefaultSignalGenerator:
     def generate(self):
         t = np.linspace(0.0, self.duration, int(self.sampling_rate * self.duration), endpoint=False)
         arr = np.sin(2 * np.pi * self.frequency * t)
+        plt.plot(t, arr, label='Array Values')
+        plt.show()
         return arr
 
 class MultiToneSignalGenerator:

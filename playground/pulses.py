@@ -415,7 +415,7 @@ def experiment_5():
   signal_generator = SteppedAmplitudeSignalGeneratorWithSmallNoise
   
   run_and_plot_single_run_histogram_nbr_samples(signal_generator, num_qubits, shots, nbrSamples, frequencies, False)
-
+ 
 def experiment_6():
   print("Experiment 6")
   """
