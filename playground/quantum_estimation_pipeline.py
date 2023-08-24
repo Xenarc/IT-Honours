@@ -9,6 +9,7 @@ import math
 import sys
 import random
 from collections import Counter
+import uuid
 
 class DefaultSignalGenerator:
     def __init__(self, num_samples, frequency, pulse_duration, toa, do_plot, noise_level=0.0):
@@ -31,6 +32,7 @@ class DefaultSignalGenerator:
         signal = signal + np.random.normal(0, self.noise_level, size=len(signal))
         if self.do_plot:
             plt.plot(t, signal, label='Signal')
+            plt.savefig(str(uuid.uuid4()) + ' signal.png')
             plt.show()
         return signal
 
@@ -52,6 +54,7 @@ class HistogramOutputProcessor:
         plt.ylabel('Counts')
         plt.title('Measurement Outcomes Histogram')
         plt.xticks(decimal_unique)
+        plt.savefig(str(uuid.uuid4()) + ' histogram.png')
         plt.show()
 
         return self.output_processor(raw_measurements)
@@ -85,7 +88,9 @@ class HeatMapOutputProcessor:
         plt.yticks([])
         plt.xlabel('Measurement Outcomes (Decimal)')
         plt.title(f'Measurement Outcomes Heatmap')
+        plt.savefig(str(uuid.uuid4()) + ' heatmap.png')
         plt.show()
+
         return self.output_processor(raw_measurements)
 
 class PulseDetectorOutputProcessor:
@@ -381,6 +386,7 @@ def experiment_5():
     x = [expected for expected, measurement in results.items()]
     y = [measurement[1] if measurement != None else 0 for expected, measurement in results.items()]
     plt.scatter(x, y)
+    plt.savefig(str(uuid.uuid4()) + 'experiment5.png')
     plt.show()
 
 def experiment_6():
@@ -393,6 +399,7 @@ def experiment_6():
     x = [expected for expected, measurement in results.items()]
     y = [measurement[0] if measurement != None else 0 for expected, measurement in results.items()]
     plt.scatter(x, y)
+    plt.savefig(str(uuid.uuid4()) + 'experiment6.png')
     plt.show()
 if __name__ == '__main__':
     experiment_3()
