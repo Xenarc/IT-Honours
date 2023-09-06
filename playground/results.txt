@@ -1,0 +1,15 @@
+Frequency Estimation
+----------------------
+Correlation Coefficient (Pearson's r):     0.5689
+Linear Regression Line:                    y = 1.7927x + 13.5549
+Coefficient of Determination (R-squared):  0.3236
+Mean Absolute Error (MAE):                 188.2188
+Root Mean Squared Error (RMSE):            192.9810
+
+Pulse Detection
+----------------------
+Correlation Coefficient (Pearson's r):     0.9125
+Linear Regression Line:                    y = 0.9186x + -0.5380
+Coefficient of Determination (R-squared):  0.8327
+Mean Absolute Error (MAE):                 5.3882
+Root Mean Squared Error (RMSE):            11.5270
