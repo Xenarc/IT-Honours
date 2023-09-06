@@ -10,6 +10,7 @@ import sys
 import random
 from collections import Counter
 import uuid
+from scipy import stats
 
 class DefaultSignalGenerator:
     def __init__(self, num_samples, frequency, pulse_duration, toa, do_plot, noise_level=0.0):
@@ -286,7 +287,7 @@ def experiment_3():
     toa = int(0.1*num_samples)
     threshold_percentage = 0.3
     min_pulse_width = 15
-    noise_level = 0.2
+    noise_level = 0.2  #13.8dBc
     do_plot = True
 
     total_qubits = num_ancilliary + num_qubits
@@ -333,7 +334,7 @@ def experiment_4(frequency=100, pd=25):
     toa = random.randint(0, num_samples - pd-2)
     threshold_percentage = 0.3
     min_pulse_width = 15
-    noise_level = 0.2
+    noise_level = 0.2  #13.8dBc
     do_plot = False
 
     total_qubits = num_ancilliary + num_qubits
@@ -378,6 +379,7 @@ def experiment_4(frequency=100, pd=25):
 
 def experiment_5():
     results = {}
+    # 128-256 MHz. Because we're down sampling, these frequencies become 128-256.
     for frequency in range(128, 256, 2):
         pulses, frequencies = experiment_4(frequency, 25)
         measured_pd = (pulses[1] - pulses[0])
@@ -388,6 +390,7 @@ def experiment_5():
     plt.scatter(x, y)
     plt.savefig(str(uuid.uuid4()) + 'experiment5.png')
     plt.show()
+    print_stats(x, y)
 
 def experiment_6():
     results = {}
@@ -401,7 +404,35 @@ def experiment_6():
     plt.scatter(x, y)
     plt.savefig(str(uuid.uuid4()) + 'experiment6.png')
     plt.show()
+    print_stats(x, y)
+
+
+def print_stats(x, y):
+    # Calculate the correlation coefficient (Pearson's r)
+    correlation_coefficient, _ = stats.pearsonr(x, y)
+
+    # Calculate the slope and intercept of the linear regression line
+    slope, intercept, _, _, _ = stats.linregress(x, y)
+
+    # Calculate the coefficient of determination (R-squared)
+    r_squared = correlation_coefficient**2
+
+    # Calculate Mean Absolute Error (MAE)
+    mae = np.mean(np.abs(np.array(x) - np.array(y)))
+
+    # Calculate Root Mean Squared Error (RMSE)
+    rmse = np.sqrt(np.mean((np.array(x) - np.array(y))**2))
+
+    # Print the calculated statistics
+    print("----------------------")
+    print(
+        f"Correlation Coefficient (Pearson's r): {correlation_coefficient:.4f}"
+    )
+    print(f"Linear Regression Line: y = {slope:.4f}x + {intercept:.4f}")
+    print(f"Coefficient of Determination (R-squared): {r_squared:.4f}")
+    print(f"Mean Absolute Error (MAE): {mae:.4f}")
+    print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
 if __name__ == '__main__':
-    experiment_3()
+    # experiment_3()
     experiment_5()
     experiment_6()
