@@ -1,10 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2023 Mark Blashki.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-#
 
 
 import logging
